@@ -8,6 +8,13 @@ import static java.nio.file.Files.createSymbolicLink
 
 class CurrentCommandSpec extends SdkmanEnvSpecification {
 
+    static final CURRENT_API = "http://localhost:8080/2"
+    static final BROADCAST_API_LATEST_ID_ENDPOINT = "$CURRENT_API/broadcast/latest/id"
+
+    def setup() {
+        curlStub.primeWith(BROADCAST_API_LATEST_ID_ENDPOINT, "echo dbfb025be9f97fda2052b5febcca0155")
+    }
+
     void "should display current version of all candidates installed"() {
         given:
         def installedCandidates = [
@@ -32,13 +39,10 @@ class CurrentCommandSpec extends SdkmanEnvSpecification {
                 "vertx"
         ]
 
-        curlStub.primeWith("http://localhost:8080/app/cliversion", "echo x.y.z").build()
         bash = sdkmanBashEnvBuilder
-                .withCurlStub(curlStub)
                 .withOfflineMode(false)
-                .withAvailableCandidates(allCandidates)
+                .withVersionCache("5.0.0")
                 .withCandidates(installedCandidates.keySet().toList())
-                .withVersionToken("x.y.z")
                 .build()
 
         prepareFoldersFor(installedCandidates)

@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -19,24 +19,24 @@
 function __sdkman_path_contains {
 	local candidate exists
 
-    candidate="$1"
-    exists="$(echo "$PATH" | grep "$candidate")"
-    if [[ -n "$exists" ]]; then
-        echo 'true'
-    else
-        echo 'false'
-    fi
+	candidate="$1"
+	exists="$(echo "$PATH" | grep "$candidate")"
+	if [[ -n "$exists" ]]; then
+		echo 'true'
+	else
+		echo 'false'
+	fi
 }
 
 function __sdkman_add_to_path {
-    local candidate present
+	local candidate present
 
-    candidate="$1"
+	candidate="$1"
 
-    present=$(__sdkman_path_contains "$candidate")
-    if [[ "$present" == 'false' ]]; then
-        PATH="$SDKMAN_CANDIDATES_DIR/$candidate/current/bin:$PATH"
-    fi
+	present=$(__sdkman_path_contains "$candidate")
+	if [[ "$present" == 'false' ]]; then
+		PATH="$SDKMAN_CANDIDATES_DIR/$candidate/current/bin:$PATH"
+	fi
 }
 
 function __sdkman_set_candidate_home {

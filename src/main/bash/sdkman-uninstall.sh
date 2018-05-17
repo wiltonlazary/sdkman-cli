@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -27,14 +27,14 @@ function __sdk_uninstall {
 	current=$(readlink "${SDKMAN_CANDIDATES_DIR}/${candidate}/current" | sed "s_${SDKMAN_CANDIDATES_DIR}/${candidate}/__g")
 	if [[ -h "${SDKMAN_CANDIDATES_DIR}/${candidate}/current" && "$version" == "$current" ]]; then
 		echo ""
-		echo "Unselecting ${candidate} ${version}..."
+		__sdkman_echo_green "Unselecting ${candidate} ${version}..."
 		unlink "${SDKMAN_CANDIDATES_DIR}/${candidate}/current"
 	fi
 	echo ""
 	if [ -d "${SDKMAN_CANDIDATES_DIR}/${candidate}/${version}" ]; then
-		echo "Uninstalling ${candidate} ${version}..."
+		__sdkman_echo_green "Uninstalling ${candidate} ${version}..."
 		rm -rf "${SDKMAN_CANDIDATES_DIR}/${candidate}/${version}"
 	else
-		echo "${candidate} ${version} is not installed."
+		__sdkman_echo_red "${candidate} ${version} is not installed."
 	fi
 }

@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -17,5 +17,6 @@
 #
 
 function __sdk_version {
-	echo "SDKMAN ${SDKMAN_VERSION}"
+	echo ""
+	__sdkman_echo_yellow "SDKMAN ${SDKMAN_VERSION}"
 }

@@ -9,8 +9,6 @@ SDKMAN is a tool for managing parallel Versions of multiple Software Development
 
 See documentation on the [SDKMAN! website](http://sdkman.io).
 
-Please report any bugs and feature request on the [GitHub Issue Tracker](https://github.com/sdkman/sdkman-cli/issues).
-
 ## Installation
 
 Open your favourite terminal and enter the following:
@@ -21,17 +19,13 @@ If the environment needs tweaking for SDKMAN to be installed, the installer will
 
 ## Running the Cucumber Features
 
-All SDKMAN's BDD tests are written in Cucumber and can be found under `src/test/cucumber/sdkman`.
-These can be run with Gradle by running the following command:
+All SDKMAN's BDD tests describing the CLI behaviour are written in Cucumber and can be found under `src/test/cucumber/sdkman`. These can be run with Gradle by running the following command:
 
     $ ./gradlew test
 
+To perform development, you will need to have a JDK 8 or higher installed which can be obtained by running the following after installing SDKMAN:
 
-__Please ensure that the JAVA_HOME environment variable is set to JDK 1.8 on your system!__
-
-Mac users can add the following line to their `~/.bash_profile` file to set this variable:
-
-	export JAVA_HOME=$(/usr/libexec/java_home -v1.8)
+    $ sdk install java
 
 ### Using Docker for tests
 

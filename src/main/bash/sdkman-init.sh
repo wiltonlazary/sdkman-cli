@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -16,18 +16,26 @@
 #   limitations under the License.
 #
 
-export SDKMAN_PLATFORM=$(uname)
+SDKMAN_PLATFORM="$(uname)"
+if [[ "$SDKMAN_PLATFORM" == 'Linux' ]]; then
+    if [[ "$(uname -m)" == 'i686' ]]; then
+        SDKMAN_PLATFORM+='32'
+    else
+        SDKMAN_PLATFORM+='64'
+    fi
+fi
+export SDKMAN_PLATFORM
 
 if [ -z "$SDKMAN_VERSION" ]; then
-    export SDKMAN_VERSION="@SDKMAN_VERSION@"
+	export SDKMAN_VERSION="@SDKMAN_VERSION@"
 fi
 
 if [ -z "$SDKMAN_LEGACY_API" ]; then
-    export SDKMAN_LEGACY_API="@SDKMAN_LEGACY_API@"
+	export SDKMAN_LEGACY_API="@SDKMAN_LEGACY_API@"
 fi
 
 if [ -z "$SDKMAN_CURRENT_API" ]; then
-    export SDKMAN_CURRENT_API="@SDKMAN_CURRENT_API@"
+	export SDKMAN_CURRENT_API="@SDKMAN_CURRENT_API@"
 fi
 
 if [ -z "$SDKMAN_DIR" ]; then
@@ -36,131 +44,82 @@ fi
 
 export SDKMAN_CANDIDATES_DIR="${SDKMAN_DIR}/candidates"
 
-# force zsh to behave well
-if [[ -n "$ZSH_VERSION" ]]; then
-	setopt shwordsplit
-fi
-
 # OS specific support (must be 'true' or 'false').
-cygwin=false;
-darwin=false;
-solaris=false;
-freebsd=false;
-case "$(uname)" in
-    CYGWIN*)
-        cygwin=true
-        ;;
-    Darwin*)
-        darwin=true
-        ;;
-    SunOS*)
-        solaris=true
-        ;;
-    FreeBSD*)
-        freebsd=true
+cygwin=false
+darwin=false
+solaris=false
+freebsd=false
+case "${SDKMAN_PLATFORM}" in
+	CYGWIN*)
+		cygwin=true
+		;;
+	Darwin*)
+		darwin=true
+		;;
+	SunOS*)
+		solaris=true
+		;;
+	FreeBSD*)
+		freebsd=true
 esac
 
-# For Cygwin, ensure paths are in UNIX format before anything is touched.
-if ${cygwin} ; then
-    [ -n "$JAVACMD" ] && JAVACMD=$(cygpath --unix "$JAVACMD")
-    [ -n "$JAVA_HOME" ] && JAVA_HOME=$(cygpath --unix "$JAVA_HOME")
-    [ -n "$CP" ] && CP=$(cygpath --path --unix "$CP")
+# Determine shell
+zsh_shell=false
+bash_shell=false
+
+if [[ -n "$ZSH_VERSION" ]]; then
+    zsh_shell=true
+else
+    bash_shell=true
 fi
 
-# Attempt to set JAVA_HOME if it's not already set.
-if [ -z "$JAVA_HOME" ] ; then
-    if ${darwin} ; then
-        [ -z "$JAVA_HOME" -a -f "/usr/libexec/java_home" ] && export JAVA_HOME=$(/usr/libexec/java_home)
-        [ -z "$JAVA_HOME" -a -d "/Library/Java/Home" ] && export JAVA_HOME="/Library/Java/Home"
-        [ -z "$JAVA_HOME" -a -d "/System/Library/Frameworks/JavaVM.framework/Home" ] && export JAVA_HOME="/System/Library/Frameworks/JavaVM.framework/Home"
-    else
-        javaExecutable="$(which javac 2> /dev/null)"
-        [[ -z "$javaExecutable" ]] && echo "SDKMAN: JAVA_HOME not set and cannot find javac to deduce location, please set JAVA_HOME." && return
-
-        readLink="$(which readlink 2> /dev/null)"
-        [[ -z "$readLink" ]] && echo "SDKMAN: JAVA_HOME not set and readlink not available, please set JAVA_HOME." && return
-
-        javaExecutable="$(readlink -f "$javaExecutable")"
-        javaHome="$(dirname "$javaExecutable")"
-        javaHome=$(expr "$javaHome" : '\(.*\)/bin')
-        JAVA_HOME="$javaHome"
-        [[ -z "$JAVA_HOME" ]] && echo "SDKMAN: could not find java, please set JAVA_HOME" && return
-        export JAVA_HOME
-    fi
-fi
-
-# Source sdkman module scripts.
-for f in $(find "${SDKMAN_DIR}/src" -type f -name 'sdkman-*' -exec basename {} \;); do
-    source "${SDKMAN_DIR}/src/${f}"
-done
-
-# Source extension files prefixed with 'sdkman-' and found in the ext/ folder
+# Source sdkman module scripts and extension files.
+#
+# Extension files are prefixed with 'sdkman-' and found in the ext/ folder.
 # Use this if extensions are written with the functional approach and want
-# to use functions in the main sdkman script.
-for f in $(find "${SDKMAN_DIR}/ext" -type f -name 'sdkman-*' -exec basename {} \;); do
-    source "${SDKMAN_DIR}/ext/${f}"
+# to use functions in the main sdkman script. For more details, refer to
+# <https://github.com/sdkman/sdkman-extensions>.
+OLD_IFS="$IFS"
+IFS=$'\n'
+scripts=($(find "${SDKMAN_DIR}/src" "${SDKMAN_DIR}/ext" -type f -name 'sdkman-*'))
+for f in "${scripts[@]}"; do
+    source "$f"
 done
-unset f
+IFS="$OLD_IFS"
+unset scripts f
 
 # Load the sdkman config if it exists.
 if [ -f "${SDKMAN_DIR}/etc/config" ]; then
 	source "${SDKMAN_DIR}/etc/config"
 fi
 
-# Create upgrade delay token if it doesn't exist
+# Create upgrade delay file if it doesn't exist
 if [[ ! -f "${SDKMAN_DIR}/var/delay_upgrade" ]]; then
 	touch "${SDKMAN_DIR}/var/delay_upgrade"
 fi
-
-# fabricate list of candidates
-if [[ -f "${SDKMAN_DIR}/var/candidates" ]]; then
-	SDKMAN_CANDIDATES_CSV=$(cat "${SDKMAN_DIR}/var/candidates")
-else
-	SDKMAN_CANDIDATES_CSV=$(__sdkman_secure_curl "${SDKMAN_LEGACY_API}/candidates")
-	echo "$SDKMAN_CANDIDATES_CSV" > "${SDKMAN_DIR}/var/candidates"
-fi
-
-# Set the candidate array
-OLD_IFS="$IFS"
-IFS=","
-SDKMAN_CANDIDATES=(${SDKMAN_CANDIDATES_CSV})
-IFS="$OLD_IFS"
 
 # set curl connect-timeout and max-time
 if [[ -z "$sdkman_curl_connect_timeout" ]]; then sdkman_curl_connect_timeout=7; fi
 if [[ -z "$sdkman_curl_max_time" ]]; then sdkman_curl_max_time=10; fi
 
-# determine if up to date
-SDKMAN_VERSION_TOKEN="${SDKMAN_DIR}/var/version"
-if [[ -f "$SDKMAN_VERSION_TOKEN" && -z "$(find "$SDKMAN_VERSION_TOKEN" -mmin +$((60*24)))" ]]; then
-    SDKMAN_REMOTE_VERSION=$(cat "$SDKMAN_VERSION_TOKEN")
-
+# Read list of candidates and set array
+SDKMAN_CANDIDATES_CACHE="${SDKMAN_DIR}/var/candidates"
+SDKMAN_CANDIDATES_CSV=$(<"$SDKMAN_CANDIDATES_CACHE")
+__sdkman_echo_debug "Setting candidates csv: $SDKMAN_CANDIDATES_CSV"
+if [[ "$zsh_shell" == 'true' ]]; then
+    SDKMAN_CANDIDATES=(${(s:,:)SDKMAN_CANDIDATES_CSV})
 else
-    SDKMAN_REMOTE_VERSION=$(__sdkman_secure_curl_with_timeouts "${SDKMAN_LEGACY_API}/candidates/app/cliversion")
-    DETECT_HTML="$(echo "$SDKMAN_REMOTE_VERSION" | tr '[:upper:]' '[:lower:]' | grep 'html')"
-    if [[ -z "$SDKMAN_REMOTE_VERSION" || -n "$DETECT_HTML" ]]; then
-        SDKMAN_REMOTE_VERSION="$SDKMAN_VERSION"
-    else
-        echo ${SDKMAN_REMOTE_VERSION} > "$SDKMAN_VERSION_TOKEN"
+    OLD_IFS="$IFS"
+    IFS=","
+    SDKMAN_CANDIDATES=(${SDKMAN_CANDIDATES_CSV})
+    IFS="$OLD_IFS"
+fi
+for candidate_name in "${SDKMAN_CANDIDATES[@]}"; do
+    candidate_dir="${SDKMAN_CANDIDATES_DIR}/${candidate_name}/current"
+    if [[ -h "$candidate_dir" || -d "${candidate_dir}" ]]; then
+        __sdkman_export_candidate_home "$candidate_name" "$candidate_dir"
+        __sdkman_prepend_candidate_to_path "$candidate_dir"
     fi
-fi
-
-# The candidates are assigned to an array for zsh compliance, a list of words is not iterable
-# Arrays are the only way, but unfortunately zsh arrays are not backward compatible with bash
-# In bash arrays are zero index based, in zsh they are 1 based(!)
-for (( i=0; i <= ${#SDKMAN_CANDIDATES[*]}; i++ )); do
-	# Eliminate empty entries due to incompatibility
-	CANDIDATE_NAME="${SDKMAN_CANDIDATES[${i}]}"
-	CANDIDATE_DIR="${SDKMAN_CANDIDATES_DIR}/${CANDIDATE_NAME}/current"
-	if [[ -n "$CANDIDATE_NAME" && ( -h "$CANDIDATE_DIR" || -d "${CANDIDATE_DIR}" ) ]]; then
-		__sdkman_export_candidate_home "$CANDIDATE_NAME" "$CANDIDATE_DIR"
-		__sdkman_prepend_candidate_to_path "$CANDIDATE_DIR"
-	fi
-	unset CANDIDATE_NAME CANDIDATE_DIR
 done
-unset i
+unset OLD_IFS candidate_name candidate_dir
 export PATH
-
-if [[ "$sdkman_disable_gvm_alias" != "true" ]]; then
-	alias gvm="sdk"
-fi

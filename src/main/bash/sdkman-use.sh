@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -26,9 +26,10 @@ function __sdk_use {
 
 	if [[ ! -d "${SDKMAN_CANDIDATES_DIR}/${candidate}/${VERSION}" ]]; then
 		echo ""
-		echo "Stop! ${candidate} ${VERSION} is not installed."
+		__sdkman_echo_red "Stop! ${candidate} ${VERSION} is not installed."
 		if [[ "$sdkman_auto_answer" != 'true' ]]; then
-			echo -n "Do you want to install it now? (Y/n): "
+			echo ""
+			__sdkman_echo_confirm "Do you want to install it now? (Y/n): "
 			read install
 		fi
 		if [[ -z "$install" || "$install" == "y" || "$install" == "Y" ]]; then
@@ -50,14 +51,14 @@ function __sdk_use {
 		export PATH=$(echo $PATH | sed -E "s!${SDKMAN_CANDIDATES_DIR}/${candidate}/([^/]+)!${SDKMAN_CANDIDATES_DIR}/${candidate}/${VERSION}!g")
 
 	else
-		export PATH=$(echo $PATH | sed -r "s!${SDKMAN_CANDIDATES_DIR}/${candidate}/([^/]+)!${SDKMAN_CANDIDATES_DIR}/${candidate}/${VERSION}!g")
+		export PATH=$(echo "$PATH" | sed -r "s!${SDKMAN_CANDIDATES_DIR}/${candidate}/([^/]+)!${SDKMAN_CANDIDATES_DIR}/${candidate}/${VERSION}!g")
 	fi
 
 	if [[ ! ( -h "${SDKMAN_CANDIDATES_DIR}/${candidate}/current" || -d "${SDKMAN_CANDIDATES_DIR}/${candidate}/current" ) ]]; then
-	    echo "Setting ${candidate} version ${VERSION} as default."
+		__sdkman_echo_green "Setting ${candidate} version ${VERSION} as default."
 		__sdkman_link_candidate_version "$candidate" "$VERSION"
 	fi
 
 	echo ""
-	echo "Using ${candidate} version ${VERSION} in this shell."
+	__sdkman_echo_green "Using ${candidate} version ${VERSION} in this shell."
 }

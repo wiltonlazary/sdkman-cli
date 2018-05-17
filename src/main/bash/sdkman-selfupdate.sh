@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -17,9 +17,9 @@
 #
 
 function __sdk_selfupdate {
-    local force_selfupdate
+	local force_selfupdate
 
-    force_selfupdate="$1"
+	force_selfupdate="$1"
 	if [[ "$SDKMAN_AVAILABLE" == "false" ]]; then
 		echo "This command is not available while offline."
 
@@ -27,7 +27,9 @@ function __sdk_selfupdate {
 		echo "No update available at this time."
 
 	else
-		__sdkman_secure_curl "${SDKMAN_LEGACY_API}/selfupdate" | bash
+		export sdkman_debug_mode
+		export sdkman_beta_channel
+		__sdkman_secure_curl "${SDKMAN_CURRENT_API}/selfupdate?beta=${sdkman_beta_channel}" | bash
 	fi
 	unset SDKMAN_FORCE_SELFUPDATE
 }
@@ -35,33 +37,33 @@ function __sdk_selfupdate {
 function __sdkman_auto_update {
 	local remote_version version delay_upgrade
 
-    remote_version="$1"
-    version="$2"
-    delay_upgrade="${SDKMAN_DIR}/var/delay_upgrade"
+	remote_version="$1"
+	version="$2"
+	delay_upgrade="${SDKMAN_DIR}/var/delay_upgrade"
 
-    if [[ -n "$(find "$delay_upgrade" -mtime +1)" && "$remote_version" != "$version" ]]; then
-        echo ""
-        echo ""
-        echo "ATTENTION: A new version of SDKMAN is available..."
-        echo ""
-        echo "The current version is $remote_version, but you have $version."
-        echo ""
+	if [[ -n "$(find "$delay_upgrade" -mtime +1)" && "$remote_version" != "$version" ]]; then
+		echo ""
+		echo ""
+		__sdkman_echo_yellow "ATTENTION: A new version of SDKMAN is available..."
+		echo ""
+		__sdkman_echo_no_colour "The current version is $remote_version, but you have $version."
+		echo ""
 
-        if [[ "$sdkman_auto_selfupdate" != "true" ]]; then
-            echo -n "Would you like to upgrade now? (Y/n)"
-            read upgrade
-        fi
+		if [[ "$sdkman_auto_selfupdate" != "true" ]]; then
+			__sdkman_echo_confirm "Would you like to upgrade now? (Y/n): "
+			read upgrade
+		fi
 
-        if [[ -z "$upgrade" ]]; then upgrade="Y"; fi
+		if [[ -z "$upgrade" ]]; then upgrade="Y"; fi
 
-        if [[ "$upgrade" == "Y" || "$upgrade" == "y" ]]; then
-            __sdk_selfupdate
-            unset upgrade
-        else
-            echo "Not upgrading today..."
-        fi
+		if [[ "$upgrade" == "Y" || "$upgrade" == "y" ]]; then
+			__sdk_selfupdate
+			unset upgrade
+		else
+			__sdkman_echo_no_colour "Not upgrading today..."
+		fi
 
-        touch "$delay_upgrade"
-    fi
+		touch "$delay_upgrade"
+	fi
 
 }

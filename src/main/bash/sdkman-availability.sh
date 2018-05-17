@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 #
 
 function __sdkman_update_broadcast_and_service_availability {
-    local broadcast_live_id=$(__sdkman_determine_broadcast_id)
-    __sdkman_set_availability "$broadcast_live_id"
+	local broadcast_live_id=$(__sdkman_determine_broadcast_id)
+	__sdkman_set_availability "$broadcast_live_id"
 	__sdkman_update_broadcast "$broadcast_live_id"
 }
 
@@ -31,7 +31,7 @@ function __sdkman_determine_broadcast_id {
 }
 
 function __sdkman_set_availability {
-    local broadcast_id="$1"
+	local broadcast_id="$1"
 	local detect_html="$(echo "$broadcast_id" | tr '[:upper:]' '[:lower:]' | grep 'html')"
 	if [[ -z "$broadcast_id" ]]; then
 		SDKMAN_AVAILABLE="false"
@@ -47,23 +47,23 @@ function __sdkman_set_availability {
 function __sdkman_display_offline_warning {
 	local broadcast_id="$1"
 	if [[ -z "$broadcast_id" && "$COMMAND" != "offline" && "$SDKMAN_OFFLINE_MODE" != "true" ]]; then
-        echo "==== INTERNET NOT REACHABLE! ==============================="
-        echo ""
-        echo " Some functionality is disabled or only partially available."
-        echo " If this persists, please enable the offline mode:"
-        echo ""
-        echo "   $ sdk offline"
-        echo ""
-        echo "============================================================"
-        echo ""
+		__sdkman_echo_red "==== INTERNET NOT REACHABLE! ==================================================="
+		__sdkman_echo_red ""
+		__sdkman_echo_red " Some functionality is disabled or only partially available."
+		__sdkman_echo_red " If this persists, please enable the offline mode:"
+		__sdkman_echo_red ""
+		__sdkman_echo_red "   $ sdk offline"
+		__sdkman_echo_red ""
+		__sdkman_echo_red "================================================================================"
+		echo ""
 	fi
 }
 
 function __sdkman_display_proxy_warning {
-	echo "==== PROXY DETECTED! ======================================="
-	echo "Please ensure you have open internet access to continue."
-	echo "============================================================"
-    echo ""
+	__sdkman_echo_red "==== PROXY DETECTED! ==========================================================="
+	__sdkman_echo_red "Please ensure you have open internet access to continue."
+	__sdkman_echo_red "================================================================================"
+	echo ""
 }
 
 function __sdkman_update_broadcast {
@@ -90,7 +90,7 @@ function __sdkman_update_broadcast {
 		BROADCAST_LIVE_TEXT=$(__sdkman_secure_curl "${SDKMAN_CURRENT_API}/broadcast/latest")
 		echo "$BROADCAST_LIVE_TEXT" > "$broadcast_text_file"
 		if [[ "$COMMAND" != "broadcast" ]]; then
-			echo "$BROADCAST_LIVE_TEXT"
+			__sdkman_echo_cyan "$BROADCAST_LIVE_TEXT"
 		fi
 	fi
 }

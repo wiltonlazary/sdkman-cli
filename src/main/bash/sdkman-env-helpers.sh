@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -20,7 +20,8 @@ function __sdkman_check_candidate_present {
 	local candidate="$1"
 
 	if [ -z "$candidate" ]; then
-		echo -e "\nNo candidate provided."
+		echo ""
+		__sdkman_echo_red "No candidate provided."
 		__sdk_help
 		return 1
 	fi
@@ -30,7 +31,8 @@ function __sdkman_check_version_present {
 	local version="$1"
 
 	if [ -z "$version" ]; then
-		echo -e "\nNo candidate version provided."
+		echo ""
+		__sdkman_echo_red "No candidate version provided."
 		__sdk_help
 		return 1
 	fi
@@ -50,19 +52,23 @@ function __sdkman_determine_version {
 		VERSION=$(readlink "${SDKMAN_CANDIDATES_DIR}/${candidate}/current" | sed "s!${SDKMAN_CANDIDATES_DIR}/${candidate}/!!g")
 
 	elif [[ "$SDKMAN_AVAILABLE" == "false" && -n "$version" ]]; then
-		echo "Stop! ${candidate} ${version} is not available while offline."
+		__sdkman_echo_red "Stop! ${candidate} ${version} is not available while offline."
 		return 1
 
 	elif [[ "$SDKMAN_AVAILABLE" == "false" && -z "$version" ]]; then
-        echo "This command is not available while offline."
-        return 1
-
-	elif [[ "$SDKMAN_AVAILABLE" == "true" && -z "$version" ]]; then
-		VERSION_VALID='valid'
-		VERSION=$(__sdkman_secure_curl "${SDKMAN_LEGACY_API}/candidates/${candidate}/default")
+		__sdkman_echo_red "This command is not available while offline."
+		return 1
 
 	else
-		VERSION_VALID=$(__sdkman_secure_curl "${SDKMAN_LEGACY_API}/candidates/${candidate}/${version}")
+		if [[ -z "$version" ]]; then
+			version=$(__sdkman_secure_curl "${SDKMAN_CURRENT_API}/candidates/default/${candidate}")
+		fi
+
+		local validation_url="${SDKMAN_CURRENT_API}/candidates/validate/${candidate}/${version}/$(echo $SDKMAN_PLATFORM | tr '[:upper:]' '[:lower:]')"
+		VERSION_VALID=$(__sdkman_secure_curl "$validation_url")
+		__sdkman_echo_debug "Validate $candidate $version for $SDKMAN_PLATFORM: $VERSION_VALID"
+		__sdkman_echo_debug "Validation URL: $validation_url"
+
 		if [[ "$VERSION_VALID" == 'valid' || "$VERSION_VALID" == 'invalid' && -n "$folder" ]]; then
 			VERSION="$version"
 
@@ -74,7 +80,9 @@ function __sdkman_determine_version {
 
 		else
 			echo ""
-			echo "Stop! $version is not a valid ${candidate} version."
+			__sdkman_echo_red "Stop! $candidate $version is not available. Possible causes:"
+			__sdkman_echo_red " * $version is an invalid version"
+			__sdkman_echo_red " * $candidate binaries are incompatible with $SDKMAN_PLATFORM"
 			return 1
 		fi
 	fi

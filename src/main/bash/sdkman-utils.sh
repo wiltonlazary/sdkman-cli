@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 #
 
 function __sdkman_echo_debug {
-	if [[ "$SDKMAN_DEBUG_MODE" == 'true' ]]; then
+	if [[ "$sdkman_debug_mode" == 'true' ]]; then
 		echo "$1"
 	fi
 }
@@ -31,10 +31,22 @@ function __sdkman_secure_curl {
 }
 
 function __sdkman_secure_curl_download {
+	local curl_params="--progress-bar --location"
 	if [[ "${sdkman_insecure_ssl}" == 'true' ]]; then
-		curl --insecure --progress-bar --location "$1"
+		curl_params="$curl_params --insecure"
+	fi
+
+	local cookie_file="${SDKMAN_DIR}/var/cookie"
+
+	if [[ -f "$cookie_file" ]]; then
+		local cookie=$(cat "$cookie_file")
+		curl_params="$curl_params --cookie $cookie"
+	fi
+
+	if [[ "$zsh_shell" == 'true' ]]; then
+		curl ${=curl_params} "$1"
 	else
-		curl --progress-bar --location "$1"
+		curl ${curl_params} "$1"
 	fi
 }
 
@@ -47,11 +59,58 @@ function __sdkman_secure_curl_with_timeouts {
 }
 
 function __sdkman_page {
-    local PAGER="${PAGER-$(which less)}"
+	if [[ -n "$PAGER" ]]; then
+		"$@" | eval $PAGER
+	elif command -v less >& /dev/null; then
+		"$@" | less
+	else
+		"$@"
+	fi
+}
 
-    if [[ -n "$PAGER" ]]; then
-        "$@" | "$PAGER"
-    else
-        "$@"
+function __sdkman_echo {
+	if [[ "$sdkman_colour_enable" == 'false' ]]; then
+		echo -e "$2"
+	else
+		echo -e "\033[1;$1$2\033[0m"
+	fi
+}
+
+function __sdkman_echo_red {
+	__sdkman_echo "31m" "$1"
+}
+
+function __sdkman_echo_no_colour {
+	echo "$1"
+}
+
+function __sdkman_echo_yellow {
+	__sdkman_echo "33m" "$1"
+}
+
+function __sdkman_echo_green {
+	__sdkman_echo "32m" "$1"
+}
+
+function __sdkman_echo_cyan {
+	__sdkman_echo "36m" "$1"
+}
+
+function __sdkman_echo_confirm {
+	if [[ "$sdkman_colour_enable" == 'false' ]]; then
+		echo -n "$1"
+	else
+		echo -e -n "\033[1;33m$1\033[0m"
+	fi
+}
+
+function __sdkman_legacy_bash_message {
+    if [[ "$bash_shell" == 'true' && -z "$(bash --version | grep 'GNU bash, version 4..*')" ]]; then
+        __sdkman_echo_red "An outdated version of bash was detected on your system!"
+        echo ""
+        __sdkman_echo_red "We recommend upgrading to bash 4.x, you have:"
+        echo ""
+        __sdkman_echo_yellow "  $(bash --version | grep 'GNU bash, version')"
+        echo ""
     fi
 }

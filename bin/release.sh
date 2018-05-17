@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 VERSION="$1"
 BRANCH="production"
@@ -15,12 +15,9 @@ git branch -D "$BRANCH"
 git checkout -b "$BRANCH"
 
 #update version
-sed -i "s/5.0.0-SNAPSHOT/$VERSION/g" config.groovy
+sed -i "s/master/$VERSION/g" config.groovy
 git add config.groovy
 git commit -m "Update version of $BRANCH to $VERSION"
-
-#push branch
-git push -f origin "$BRANCH:$BRANCH"
 
 #push tag
 git tag "$VERSION"

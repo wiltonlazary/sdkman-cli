@@ -9,7 +9,7 @@ import static cucumber.api.groovy.Hooks.After
 import static cucumber.api.groovy.Hooks.Before
 
 HTTP_PROXY = System.getProperty("httpProxy") ?: ""
-PLATFORM = UnixUtils.platform
+PLATFORM = UnixUtils.platform.toLowerCase()
 
 FAKE_JDK_PATH = "/path/to/my/openjdk"
 SERVICE_UP_HOST="localhost"
@@ -41,8 +41,10 @@ tmpDir = "${sdkmanDir}/tmp" as File
 broadcastFile = new File(varDir, "broadcast")
 broadcastIdFile = new File(varDir, "broadcast_id")
 candidatesFile = new File(varDir, "candidates")
-versionTokenFile = new File(varDir, "version")
+versionFile = new File(varDir, "version")
 initScript = new File(binDir, "sdkman-init.sh")
+
+localCandidates = ['groovy', 'grails', 'java', 'kotlin', 'scala']
 
 bash = null
 

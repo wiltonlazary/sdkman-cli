@@ -1,5 +1,7 @@
 package sdkman.steps
 
+import sdkman.stubs.UnameStub
+
 import java.util.zip.ZipException
 import java.util.zip.ZipFile
 
@@ -8,6 +10,10 @@ import static sdkman.stubs.WebServiceStub.primeEndpointWithString
 import static sdkman.stubs.WebServiceStub.primeSelfupdate
 
 import sdkman.env.SdkmanBashEnvBuilder
+
+import static sdkman.support.UnixUtils.asSdkmanPlatform
+
+def BROADCAST_MESSAGE = "broadcast message"
 
 And(~'^the sdkman work folder is created$') { ->
     assert sdkmanDir.isDirectory(), "The SDKMAN directory does not exist."
@@ -34,8 +40,8 @@ And(~'^the archive for candidate "([^"]*)" version "([^"]*)" is removed$') { Str
 
 And(~'^the internet is reachable$') {->
     primeEndpointWithString("/broadcast/latest/id", "12345")
-    primeEndpointWithString("/broadcast/latest", "broadcast message")
-    primeEndpointWithString("/app/version", sdkmanVersion)
+    primeEndpointWithString("/broadcast/latest", BROADCAST_MESSAGE)
+    primeEndpointWithString("/app/stable", sdkmanVersion)
     primeSelfupdate()
 
     offlineMode = false
@@ -51,8 +57,8 @@ And(~'^the internet is not reachable$') {->
 
 And(~'^offline mode is disabled with reachable internet$') {->
     primeEndpointWithString("/broadcast/latest/id", "12345")
-    primeEndpointWithString("/broadcast/latest", "broadcast message")
-    primeEndpointWithString("/app/version", sdkmanVersion)
+    primeEndpointWithString("/broadcast/latest", BROADCAST_MESSAGE)
+    primeEndpointWithString("/app/stable", sdkmanVersion)
 
     offlineMode = false
     serviceUrlEnv = SERVICE_UP_URL
@@ -61,8 +67,8 @@ And(~'^offline mode is disabled with reachable internet$') {->
 
 And(~'^offline mode is enabled with reachable internet$') {->
     primeEndpointWithString("/broadcast/latest/id", "12345")
-    primeEndpointWithString("/broadcast/latest", "broadcast message")
-    primeEndpointWithString("/app/version", sdkmanVersion)
+    primeEndpointWithString("/broadcast/latest", BROADCAST_MESSAGE)
+    primeEndpointWithString("/app/stable", sdkmanVersion)
 
     offlineMode = true
     serviceUrlEnv = SERVICE_UP_URL
@@ -75,6 +81,13 @@ And(~'^offline mode is enabled with unreachable internet$') {->
     javaHome = FAKE_JDK_PATH
 }
 
+And(~'^a machine with "(.*)" installed$') { String platform ->
+    def binFolder = "$sdkmanBaseDir/bin" as File
+    UnameStub.prepareIn(binFolder)
+            .forPlatform(asSdkmanPlatform(platform))
+            .build()
+}
+
 And(~'^an initialised environment$') {->
     bash = SdkmanBashEnvBuilder.create(sdkmanBaseDir)
         .withOfflineMode(offlineMode)
@@ -82,7 +95,8 @@ And(~'^an initialised environment$') {->
         .withCurrentService(serviceUrlEnv)
         .withJdkHome(javaHome)
         .withHttpProxy(HTTP_PROXY)
-        .withVersionToken(sdkmanVersion)
+        .withVersionCache(sdkmanVersion)
+        .withCandidates(localCandidates)
         .withSdkmanVersion(sdkmanVersion)
         .build()
 }
@@ -94,18 +108,18 @@ And(~'^an outdated initialised environment$') {->
         .withCurrentService(serviceUrlEnv)
         .withJdkHome(javaHome)
         .withHttpProxy(HTTP_PROXY)
-        .withVersionToken(sdkmanVersionOutdated)
+        .withVersionCache(sdkmanVersionOutdated)
         .withSdkmanVersion(sdkmanVersionOutdated)
         .build()
 
     def twoDaysAgoInMillis = System.currentTimeMillis() - 172800000
 
-    def upgradeToken = "$sdkmanDir/var/delay_upgrade" as File
-    upgradeToken.createNewFile()
-    upgradeToken.setLastModified(twoDaysAgoInMillis)
+    def upgradeFile = "$sdkmanDir/var/delay_upgrade" as File
+    upgradeFile.createNewFile()
+    upgradeFile.setLastModified(twoDaysAgoInMillis)
 
-    def versionToken = "$sdkmanDir/var/version" as File
-    versionToken.setLastModified(twoDaysAgoInMillis)
+    def versionFile = "$sdkmanDir/var/version" as File
+    versionFile.setLastModified(twoDaysAgoInMillis)
 
     def initFile = "$sdkmanDir/bin/sdkman-init.sh" as File
     initFile.text = initFile.text.replace(sdkmanVersion, sdkmanVersionOutdated)
@@ -122,4 +136,8 @@ And(~'^the system is bootstrapped again$') {->
 
 And(~/^the sdkman version is "([^"]*)"$/) { String version ->
     sdkmanVersion = version
+}
+
+And(~/^the candidates cache is initialised with "(.*)"$/) { String candidate ->
+    localCandidates << candidate
 }

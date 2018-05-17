@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
-#   Copyright 2012 Marco Vermeulen
+#   Copyright 2017 Marco Vermeulen
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,38 +18,43 @@
 
 function sdk {
 
-    COMMAND="$1"
-    QUALIFIER="$2"
+	COMMAND="$1"
+	QUALIFIER="$2"
 
-    case "$COMMAND" in
-        l)
-            COMMAND="list";;
-        ls)
-            COMMAND="list";;
-        h)
-            COMMAND="help";;
-        v)
-            COMMAND="version";;
-        u)
-            COMMAND="use";;
-        i)
-            COMMAND="install";;
-        rm)
-            COMMAND="uninstall";;
-        c)
-            COMMAND="current";;
-        o)
-            COMMAND="outdated";;
-        d)
-            COMMAND="default";;
-        b)
-            COMMAND="broadcast";;
-    esac
+	case "$COMMAND" in
+		l)
+			COMMAND="list";;
+		ls)
+			COMMAND="list";;
+		h)
+			COMMAND="help";;
+		v)
+			COMMAND="version";;
+		u)
+			COMMAND="use";;
+		i)
+			COMMAND="install";;
+		rm)
+			COMMAND="uninstall";;
+		c)
+			COMMAND="current";;
+		ug)
+			COMMAND="upgrade";;
+		d)
+			COMMAND="default";;
+		b)
+			COMMAND="broadcast";;
+	esac
 
 	#
 	# Various sanity checks and default settings
 	#
-	mkdir -p "$SDKMAN_DIR"
+
+    # Check version and candidates cache
+    if [[ "$COMMAND" != "update" ]]; then
+        ___sdkman_check_candidates_cache "$SDKMAN_CANDIDATES_CACHE" || return 1
+        ___sdkman_check_version_cache
+    fi
 
 	# Always presume internet availability
 	SDKMAN_AVAILABLE="true"
@@ -58,14 +63,14 @@ function sdk {
 	fi
 
 	# ...unless proven otherwise
-    __sdkman_update_broadcast_and_service_availability
+	__sdkman_update_broadcast_and_service_availability
 
 	# Load the sdkman config if it exists.
 	if [ -f "${SDKMAN_DIR}/etc/config" ]; then
 		source "${SDKMAN_DIR}/etc/config"
 	fi
 
- 	# no command provided
+	# no command provided
 	if [[ -z "$COMMAND" ]]; then
 		__sdk_help
 		return 1
@@ -93,13 +98,15 @@ function sdk {
 	# Check whether the candidate exists
 	local sdkman_valid_candidate=$(echo ${SDKMAN_CANDIDATES[@]} | grep -w "$QUALIFIER")
 	if [[ -n "$QUALIFIER" && "$COMMAND" != "offline" && "$COMMAND" != "flush" && "$COMMAND" != "selfupdate" && -z "$sdkman_valid_candidate" ]]; then
-		echo -e "\nStop! $QUALIFIER is not a valid candidate."
+		echo ""
+		__sdkman_echo_red "Stop! $QUALIFIER is not a valid candidate."
 		return 1
 	fi
 
 	# Validate offline qualifier
 	if [[ "$COMMAND" == "offline" && -n "$QUALIFIER" && -z $(echo "enable disable" | grep -w "$QUALIFIER") ]]; then
-		echo -e "\nStop! $QUALIFIER is not a valid offline mode."
+		echo ""
+		__sdkman_echo_red "Stop! $QUALIFIER is not a valid offline mode."
 	fi
 
 	# Check whether the command exists as an internal function...
@@ -116,6 +123,6 @@ function sdk {
 
 	# Attempt upgrade after all is done
 	if [[ "$COMMAND" != "selfupdate" ]]; then
-	    __sdkman_auto_update "$SDKMAN_REMOTE_VERSION" "$SDKMAN_VERSION"
+		__sdkman_auto_update "$SDKMAN_REMOTE_VERSION" "$SDKMAN_VERSION"
 	fi
 }
