@@ -16,6 +16,20 @@
 #   limitations under the License.
 #
 
+# set env vars if not set
+if [ -z "$SDKMAN_VERSION" ]; then
+	export SDKMAN_VERSION="@SDKMAN_VERSION@"
+fi
+
+if [ -z "$SDKMAN_CANDIDATES_API" ]; then
+	export SDKMAN_CANDIDATES_API="@SDKMAN_CANDIDATES_API@"
+fi
+
+if [ -z "$SDKMAN_DIR" ]; then
+	export SDKMAN_DIR="$HOME/.sdkman"
+fi
+
+# infer platform
 SDKMAN_PLATFORM="$(uname)"
 if [[ "$SDKMAN_PLATFORM" == 'Linux' ]]; then
 	if [[ "$(uname -m)" == 'i686' ]]; then
@@ -25,24 +39,6 @@ if [[ "$SDKMAN_PLATFORM" == 'Linux' ]]; then
 	fi
 fi
 export SDKMAN_PLATFORM
-
-if [ -z "$SDKMAN_VERSION" ]; then
-	export SDKMAN_VERSION="@SDKMAN_VERSION@"
-fi
-
-if [ -z "$SDKMAN_LEGACY_API" ]; then
-	export SDKMAN_LEGACY_API="@SDKMAN_LEGACY_API@"
-fi
-
-if [ -z "$SDKMAN_CURRENT_API" ]; then
-	export SDKMAN_CURRENT_API="@SDKMAN_CURRENT_API@"
-fi
-
-if [ -z "$SDKMAN_DIR" ]; then
-	export SDKMAN_DIR="$HOME/.sdkman"
-fi
-
-export SDKMAN_CANDIDATES_DIR="${SDKMAN_DIR}/candidates"
 
 # OS specific support (must be 'true' or 'false').
 cygwin=false
@@ -102,6 +98,15 @@ fi
 if [[ -z "$sdkman_curl_connect_timeout" ]]; then sdkman_curl_connect_timeout=7; fi
 if [[ -z "$sdkman_curl_max_time" ]]; then sdkman_curl_max_time=10; fi
 
+# set curl retry
+if [[ -z "${sdkman_curl_retry}" ]]; then sdkman_curl_retry=0; fi
+
+# set curl retry max time in seconds
+if [[ -z "${sdkman_curl_retry_max_time}" ]]; then sdkman_curl_retry_max_time=60; fi
+
+# set curl to continue downloading automatically
+if [[ -z "${sdkman_curl_continue}" ]]; then sdkman_curl_continue=true; fi
+
 # Read list of candidates and set array
 SDKMAN_CANDIDATES_CACHE="${SDKMAN_DIR}/var/candidates"
 SDKMAN_CANDIDATES_CSV=$(<"$SDKMAN_CANDIDATES_CACHE")
@@ -111,9 +116,12 @@ if [[ "$zsh_shell" == 'true' ]]; then
 else
 	OLD_IFS="$IFS"
 	IFS=","
-	SDKMAN_CANDIDATES=(${SDKMAN_CANDIDATES_CSV})
+        SDKMAN_CANDIDATES=(${SDKMAN_CANDIDATES_CSV})
 	IFS="$OLD_IFS"
 fi
+
+export SDKMAN_CANDIDATES_DIR="${SDKMAN_DIR}/candidates"
+
 for candidate_name in "${SDKMAN_CANDIDATES[@]}"; do
 	candidate_dir="${SDKMAN_CANDIDATES_DIR}/${candidate_name}/current"
 	if [[ -h "$candidate_dir" || -d "${candidate_dir}" ]]; then

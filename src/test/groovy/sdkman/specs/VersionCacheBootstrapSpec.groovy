@@ -8,10 +8,10 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
 
     static final MORE_THAN_A_DAY_IN_MILLIS = 24 * 61 * 60 * 1000
 
-    static final CURRENT_API = "http://localhost:8080/2"
-    static final CLI_VERSION_STABLE_ENDPOINT = "$CURRENT_API/broker/download/sdkman/version/stable"
-    static final CLI_VERSION_BETA_ENDPOINT = "$CURRENT_API/broker/download/sdkman/version/beta"
-    static final CANDIDATES_ENDPOINT = "$CURRENT_API/candidates"
+    static final CANDIDATES_API = "http://localhost:8080/2"
+    static final CLI_VERSION_STABLE_ENDPOINT = "$CANDIDATES_API/broker/download/sdkman/version/stable"
+    static final CLI_VERSION_BETA_ENDPOINT = "$CANDIDATES_API/broker/download/sdkman/version/beta"
+    static final CANDIDATES_ENDPOINT = "$CANDIDATES_API/candidates"
 
     File versionCache
 
@@ -23,9 +23,7 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
     void "should store version cache if does not exist"() {
         given:
         curlStub.primeWith(CLI_VERSION_STABLE_ENDPOINT, "echo x.y.b")
-        bash = sdkmanBashEnvBuilder
-                .withLegacyService(CURRENT_API)
-                .build()
+        bash = sdkmanBashEnvBuilder.build()
 
         and:
         bash.start()
@@ -62,7 +60,6 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
         given:
         curlStub.primeWith(CLI_VERSION_STABLE_ENDPOINT, "echo x.y.b")
         bash = sdkmanBashEnvBuilder
-                .withLegacyService(CURRENT_API)
                 .withVersionCache("x.y.a")
                 .build()
 
@@ -85,7 +82,6 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
         given:
         curlStub.primeWith(CLI_VERSION_STABLE_ENDPOINT, "echo ''")
         bash = sdkmanBashEnvBuilder
-                .withLegacyService(CURRENT_API)
                 .withVersionCache("x.y.z")
                 .build()
 
@@ -107,7 +103,6 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
         given:
         curlStub.primeWith(CLI_VERSION_STABLE_ENDPOINT, "echo ''")
         bash = sdkmanBashEnvBuilder
-                .withLegacyService(CURRENT_API)
                 .withVersionCache("x.y.z")
                 .build()
 
@@ -130,7 +125,6 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
         def sdkmanVersion = "x.y.z"
         curlStub.primeWith(CLI_VERSION_STABLE_ENDPOINT, "echo '<html><title>sorry</title></html>'")
         bash = sdkmanBashEnvBuilder
-                .withLegacyService(CURRENT_API)
                 .withVersionCache(sdkmanVersion)
                 .build()
 
@@ -152,7 +146,6 @@ class VersionCacheBootstrapSpec extends SdkmanEnvSpecification {
         given:
         curlStub.primeWith(CLI_VERSION_BETA_ENDPOINT, "echo x.y.z")
         bash = sdkmanBashEnvBuilder
-                .withLegacyService(CURRENT_API)
                 .withVersionCache("x.y.w")
                 .withConfiguration("sdkman_beta_channel", "true")
                 .build()
